@@ -3,7 +3,7 @@ import { auth, db } from "../config/firebase";
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect, // <-- UBAH: Menggunakan Redirect, bukan Popup
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { ref, get, set } from "firebase/database";
@@ -52,7 +52,14 @@ export function AuthProvider({ children }) {
 
   async function loginWithGoogle() {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+
+    // Agar Google selalu menanyakan/menampilkan pilihan akun email
+    provider.setCustomParameters({
+      prompt: "select_account",
+    });
+
+    // UBAH: Dialihkan (Redirect) ke halaman Google dengan aman agar tidak diblokir browser
+    return signInWithRedirect(auth, provider);
   }
 
   function logout() {
