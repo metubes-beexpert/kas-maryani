@@ -3,7 +3,8 @@ import { auth, db } from "../config/firebase";
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithRedirect, // <-- UBAH: Menggunakan Redirect, bukan Popup
+  signInWithRedirect,
+  getRedirectResult, // <-- TAMBAHAN 1: Import ini
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { ref, get, set } from "firebase/database";
@@ -58,7 +59,6 @@ export function AuthProvider({ children }) {
       prompt: "select_account",
     });
 
-    // UBAH: Dialihkan (Redirect) ke halaman Google dengan aman agar tidak diblokir browser
     return signInWithRedirect(auth, provider);
   }
 
@@ -67,17 +67,34 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        await syncUserData(user);
-      } else {
-        setUserData(null);
-      }
-      setLoading(false);
-    });
+    let unsubscribe;
 
-    return unsubscribe;
+    const initializeAuth = async () => {
+      try {
+        // TAMBAHAN 2: Tahan React! Suruh tunggu Firebase selesai membaca hasil Redirect dari Google
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error("Error saat proses redirect:", error);
+      }
+
+      // TAMBAHAN 3: Setelah hasil redirect diproses, baru jalankan pengecekan normal
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        setCurrentUser(user);
+        if (user) {
+          await syncUserData(user);
+        } else {
+          setUserData(null);
+        }
+        // Matikan layar loading HANYA setelah kita 100% yakin status user-nya
+        setLoading(false);
+      });
+    };
+
+    initializeAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const value = {
