@@ -3,8 +3,9 @@ import { auth, db } from "../config/firebase";
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult, // <-- TAMBAHAN 1: Import ini
+  signInWithPopup,
+  signInWithRedirect, // Ditambahkan untuk fallback
+  getRedirectResult, // Ditambahkan untuk menangkap hasil redirect
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { ref, get, set } from "firebase/database";
@@ -32,8 +33,6 @@ export function AuthProvider({ children }) {
 
     if (snapshot.exists()) {
       setUserData(snapshot.val());
-      // PANGGIL NOTIFIKASI: Simpan token device jika diizinkan
-      requestAndSaveFCMToken(user.uid);
     } else {
       // Create new pending user
       const newUserData = {
@@ -45,21 +44,33 @@ export function AuthProvider({ children }) {
       };
       await set(userRef, newUserData);
       setUserData(newUserData);
+    }
 
-      // PANGGIL NOTIFIKASI: Simpan token device jika diizinkan
+    // Panggil notifikasi tanpa memblokir proses login jika gagal (silent fail)
+    try {
       requestAndSaveFCMToken(user.uid);
+    } catch (error) {
+      console.warn("Notifikasi tidak dapat dijalankan saat ini:", error);
     }
   }
 
+  // --- LOGIKA LOGIN HYBRID (ANTI-BLOKIR) ---
   async function loginWithGoogle() {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
 
-    // Agar Google selalu menanyakan/menampilkan pilihan akun email
-    provider.setCustomParameters({
-      prompt: "select_account",
-    });
-
-    return signInWithRedirect(auth, provider);
+    try {
+      // 1. Coba gunakan Popup terlebih dahulu (Lebih cepat & tidak looping)
+      return await signInWithPopup(auth, provider);
+    } catch (error) {
+      // 2. Jika browser memblokir popup (sering terjadi di HP/PWA)
+      if (error.code === "auth/popup-blocked") {
+        console.log("Popup diblokir, mengalihkan menggunakan Redirect...");
+        // Gunakan metode Redirect sebagai cadangan
+        return signInWithRedirect(auth, provider);
+      }
+      throw error;
+    }
   }
 
   function logout() {
@@ -67,34 +78,22 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    let unsubscribe;
+    // Tangkap hasil jika pengguna baru saja kembali dari Redirect Google
+    getRedirectResult(auth).catch((error) => {
+      console.error("Error saat kembali dari Google:", error);
+    });
 
-    const initializeAuth = async () => {
-      try {
-        // TAMBAHAN 2: Tahan React! Suruh tunggu Firebase selesai membaca hasil Redirect dari Google
-        await getRedirectResult(auth);
-      } catch (error) {
-        console.error("Error saat proses redirect:", error);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        await syncUserData(user);
+      } else {
+        setUserData(null);
       }
+      setLoading(false);
+    });
 
-      // TAMBAHAN 3: Setelah hasil redirect diproses, baru jalankan pengecekan normal
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setCurrentUser(user);
-        if (user) {
-          await syncUserData(user);
-        } else {
-          setUserData(null);
-        }
-        // Matikan layar loading HANYA setelah kita 100% yakin status user-nya
-        setLoading(false);
-      });
-    };
-
-    initializeAuth();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
   const value = {
