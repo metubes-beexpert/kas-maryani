@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #faf7f2;
+  --color-brand-100: #f3ece1;
+  --color-brand-200: #ebd8c3;
+  --color-brand-300: #e0c0a1;
+  --color-brand-400: #d2a179;
+  --color-brand-500: #c58658;
+  --color-brand-600: #b57049;
+  --color-brand-700: #985a3e;
+  --color-brand-800: #7c4a36;
+  --color-brand-900: #643f2f;
+  
+  --font-sans: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-50 text-brand-900 font-sans antialiased;
+  }
+}
