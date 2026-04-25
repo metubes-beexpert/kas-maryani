@@ -374,6 +374,12 @@ export default function ApprovalCenterTab() {
         <h4 className="font-bold text-brand-900 mb-3 flex items-center gap-2">
           <UserCheck className="w-5 h-5" />
           Pendaftaran Baru
+          {/* BADGE NOTIFIKASI USER BARU */}
+          {pendingUsers.length > 0 && (
+            <span className="bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm animate-pulse ml-1">
+              {pendingUsers.length}
+            </span>
+          )}
         </h4>
         {pendingUsers.length === 0 ? (
           <div className="bg-white rounded-2xl p-6 border border-brand-100 text-center text-brand-400 text-sm">
@@ -400,8 +406,18 @@ export default function ApprovalCenterTab() {
 
       <section>
         <h4 className="font-bold text-brand-900 mb-3 mt-4 flex items-center gap-2">
-          Persetujuan Transaksi (Kas Keluar & Perubahan Data)
+          Persetujuan Transaksi
+          {/* BADGE NOTIFIKASI TRANSAKSI BARU */}
+          {pendingTx.length > 0 && (
+            <span className="bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm animate-pulse ml-1">
+              {pendingTx.length}
+            </span>
+          )}
         </h4>
+        <p className="text-xs text-brand-500 mb-3 -mt-2">
+          Kas Keluar & Perubahan Data
+        </p>
+
         {pendingTx.length === 0 ? (
           <div className="bg-white rounded-2xl p-6 border border-brand-100 text-center text-brand-400 text-sm">
             Tidak ada pengajuan pengeluaran, pinjaman, maupun edit/hapus.

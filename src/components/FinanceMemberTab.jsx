@@ -142,6 +142,29 @@ export default function FinanceMemberTab() {
     return true;
   });
 
+  // --- LOGIKA BARU: HITUNG BADGE NOTIFIKASI RIWAYAT ---
+  const badgeRiwayatCount = myTxAll.filter(([_, tx]) => {
+    // 1. Tagihan yang butuh dibayar member
+    if (tx.status === "menunggu_pembayaran") return true;
+
+    // 2. Transaksi yang sedang direview/diproses bendahara
+    if (tx.status === "pending_bendahara" || tx.status === "menunggu_bendahara")
+      return true;
+
+    // 3. Transaksi yang BARU SAJA di verifikasi (Approved) dalam 48 jam terakhir
+    if (tx.status === "approved" || tx.status === "rejected") {
+      const dateStr = tx.updated_at || tx.created_at;
+      if (!dateStr) return false;
+      const txDate = new Date(dateStr);
+      const now = new Date();
+      const diffHours = Math.abs(now - txDate) / 36e5; // Konversi ke jam
+      return diffHours <= 48; // Muncul badge selama 2 hari setelah diverifikasi
+    }
+
+    return false;
+  }).length;
+  // ----------------------------------------------------
+
   const toggleMonth = (num) => {
     const val = `${num.toString().padStart(2, "0")}-${selectedYear}`;
     if (paidMonthsMapping.has(val)) return;
@@ -495,16 +518,24 @@ export default function FinanceMemberTab() {
         >
           <HandCoins className="w-4 h-4" /> Pinjaman
         </button>
+
+        {/* --- TOMBOL RIWAYAT DENGAN BADGE NOTIFIKASI --- */}
         <button
           onClick={() => setActiveSubTab("riwayat")}
-          className={`flex-1 flex gap-2 justify-center items-center py-2 text-sm font-semibold rounded-lg transition-colors ${
+          className={`relative flex-1 flex gap-2 justify-center items-center py-2 text-sm font-semibold rounded-lg transition-colors ${
             activeSubTab === "riwayat"
               ? "bg-white text-brand-700 shadow-sm"
               : "text-brand-600 hover:text-brand-800"
           }`}
         >
           <History className="w-4 h-4" /> Riwayat
+          {badgeRiwayatCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm border border-white">
+              {badgeRiwayatCount > 99 ? "99+" : badgeRiwayatCount}
+            </span>
+          )}
         </button>
+        {/* ----------------------------------------------- */}
       </div>
 
       {activeSubTab === "setor" && (
@@ -1027,16 +1058,63 @@ export default function FinanceMemberTab() {
                 <input
                   required
                   type="number"
-                  max={totalTabunganKu}
                   min="0"
+                  // Atur max limit atribut bawaan HTML agar lebih aman
+                  max={Math.min(totalTabunganKu, totalPinjamanAktif)}
                   disabled={totalPinjamanAktif <= 0}
                   value={formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: e.target.value })
-                  }
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    const numVal = parseInt(val);
+
+                    // Cari batas maksimal yang paling logis
+                    const maxAllowed = Math.min(
+                      totalTabunganKu,
+                      totalPinjamanAktif
+                    );
+
+                    if (val !== "" && numVal > maxAllowed) {
+                      // Jika tabungan lebih kecil dari hutang (Kasus: Tabungan 300rb, Hutang 400rb)
+                      if (totalTabunganKu < totalPinjamanAktif) {
+                        alert(
+                          "Nominal tidak boleh melebihi jumlah tabungan yang Anda miliki!"
+                        );
+                      }
+                      // Jika hutang lebih kecil dari tabungan (Kasus: Tabungan 500rb, Hutang 300rb)
+                      else {
+                        alert(
+                          "Nominal cicilan tidak boleh melebihi total pinjaman berjalan!"
+                        );
+                      }
+
+                      // Kembalikan angka otomatis ke batas maksimal yang diizinkan
+                      val = maxAllowed.toString();
+                    }
+
+                    setFormData({ ...formData, amount: val });
+                  }}
                   className="w-full border border-purple-300 rounded-xl px-4 py-3 bg-white outline-none focus:border-purple-500 text-brand-900 font-bold disabled:bg-gray-100 disabled:text-gray-400"
-                  placeholder="Maksimal: Saldo tabungan"
+                  placeholder={`Maksimal: ${formatCurrency(
+                    Math.min(totalTabunganKu, totalPinjamanAktif)
+                  )}`}
                 />
+
+                {/* Estimasi Sisa Pinjaman */}
+                {formData.amount &&
+                  parseInt(formData.amount) > 0 &&
+                  totalPinjamanAktif > 0 && (
+                    <div className="mt-2 text-xs font-medium text-purple-700 bg-purple-50 p-2 rounded-lg border border-purple-200 flex justify-between items-center shadow-sm">
+                      <span>Estimasi Sisa Pinjaman:</span>
+                      <span className="font-bold text-sm">
+                        {formatCurrency(
+                          Math.max(
+                            0,
+                            totalPinjamanAktif - parseInt(formData.amount)
+                          )
+                        )}
+                      </span>
+                    </div>
+                  )}
                 <textarea
                   value={formData.description}
                   disabled={totalPinjamanAktif <= 0}

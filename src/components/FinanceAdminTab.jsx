@@ -660,25 +660,37 @@ export default function FinanceAdminTab() {
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
       <div className="flex bg-brand-100 p-1 rounded-xl shadow-sm gap-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
+        {/* TOMBOL MASUK DENGAN BADGE */}
         <button
           onClick={() => setActiveSubTab("setoran")}
-          className={`flex-1 min-w-[60px] py-2 px-2 text-[11px] font-semibold rounded-lg transition-colors ${
+          className={`relative flex-1 min-w-[60px] py-2 px-2 text-[11px] font-semibold rounded-lg transition-colors ${
             activeSubTab === "setoran"
               ? "bg-white text-brand-700 shadow-sm"
               : "text-brand-600 hover:text-brand-800"
           }`}
         >
           Masuk
+          {pendingSetoran.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm border border-white">
+              {pendingSetoran.length}
+            </span>
+          )}
         </button>
+        {/* TOMBOL PINJAMAN DENGAN BADGE */}
         <button
           onClick={() => setActiveSubTab("pinjaman")}
-          className={`flex-1 min-w-[70px] py-2 px-2 text-[11px] font-semibold rounded-lg transition-colors ${
+          className={`relative flex-1 min-w-[70px] py-2 px-2 text-[11px] font-semibold rounded-lg transition-colors ${
             activeSubTab === "pinjaman"
               ? "bg-white text-brand-700 shadow-sm"
               : "text-brand-600 hover:text-brand-800"
           }`}
         >
           Pinjaman
+          {pendingPinjaman.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm border border-white">
+              {pendingPinjaman.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setActiveSubTab("pengeluaran")}
