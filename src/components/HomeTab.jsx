@@ -1,11 +1,11 @@
-import React from "react";
-import { Wallet, Calendar } from "lucide-react";
+import React, { useState } from "react";
+import { Wallet, Calendar, Clock, MapPin, AlignLeft, X } from "lucide-react"; // DITAMBAHKAN ICON BARU
 import { useDatabase } from "../hooks/useDatabase";
 import { useAuth } from "../contexts/AuthContext";
 
 const FooterBantu = () => {
   return (
-    <footer className="mt-auto py-4 px-4 bg-[#f7f1eb] rounded-2xl text-center border border-orange-100/50 w-full">
+    <footer className="mt-auto py-4 px-4 bg-[#f7f1eb] rounded-2xl text-center border border-orange-100/50 w-full shrink-0">
       <div className="flex flex-col items-center gap-3">
         <p className="text-xs text-gray-500 font-medium">
           Aplikasi ini dipersembahkan oleh:
@@ -46,6 +46,9 @@ export default function HomeTab() {
   const { data: myFamily } = useDatabase(`families/${userData?.family_id}`);
   const { data: events, loading: eventsLoading } = useDatabase("events");
   const { data: allTransactions } = useDatabase("transactions");
+
+  // DITAMBAHKAN: State untuk mengontrol Modal Detail Acara
+  const [selectedEventModal, setSelectedEventModal] = useState(null);
 
   const familyName = myFamily?.nama_kepala || "Keluarga Anda";
 
@@ -108,11 +111,22 @@ export default function HomeTab() {
     }).format(amount || 0);
   };
 
-  const formatDateBox = (dateString) => {
+  // DITAMBAHKAN: Format Tanggal yang lebih lengkap
+  const formatFullDate = (dateString) => {
     const d = new Date(dateString);
     return {
-      month: d.toLocaleString("id-ID", { month: "short" }),
-      date: d.getDate().toString().padStart(2, "0"),
+      fullDate: d.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      time: d.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      shortMonth: d.toLocaleString("id-ID", { month: "short" }),
+      dateNum: d.getDate().toString().padStart(2, "0"),
     };
   };
 
@@ -127,7 +141,7 @@ export default function HomeTab() {
         </p>
       </div>
 
-      <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden shrink-0">
         <div className="absolute -top-4 -right-4 p-4 opacity-10">
           <Wallet className="w-32 h-32" />
         </div>
@@ -146,7 +160,7 @@ export default function HomeTab() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 shrink-0">
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 shadow-sm flex flex-col justify-center">
           <p className="text-[10px] sm:text-xs font-bold text-brand-600 uppercase tracking-wider mb-1 line-clamp-1">
             Kas {familyName}
@@ -166,7 +180,7 @@ export default function HomeTab() {
       </div>
 
       {totalPinjamanAktif > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm flex justify-between items-center">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm flex justify-between items-center shrink-0">
           <div className="flex-1 pr-2">
             <p className="text-[10px] sm:text-xs font-bold text-red-600 uppercase tracking-wider mb-1 line-clamp-1">
               Total Pinjaman Aktif
@@ -179,7 +193,7 @@ export default function HomeTab() {
         </div>
       )}
 
-      <section>
+      <section className="shrink-0 mb-4">
         <div className="flex justify-between items-end mb-3">
           <h3 className="text-brand-900 font-bold text-lg">
             Acara Keluarga Terdekat
@@ -187,25 +201,56 @@ export default function HomeTab() {
         </div>
 
         {eventsLoading ? (
-          <div className="bg-white rounded-2xl p-5 border border-brand-100 shadow-sm animate-pulse flex gap-4 h-24"></div>
+          <div className="bg-white rounded-2xl p-5 border border-brand-100 shadow-sm animate-pulse flex gap-4 h-28"></div>
         ) : nearestEvent ? (
-          <div className="bg-white rounded-2xl p-5 border border-brand-100 shadow-sm flex gap-4 items-center group hover:border-brand-300 transition-colors">
-            <div className="bg-brand-50 w-16 h-16 rounded-xl flex flex-col items-center justify-center text-brand-700 font-bold shrink-0 shadow-inner">
+          // DITAMBAHKAN: Tampilan Card Acara yang Baru & Bisa di-klik
+          <div
+            onClick={() => setSelectedEventModal(nearestEvent)}
+            className="bg-white rounded-2xl p-5 border border-brand-200 shadow-md hover:border-brand-400 hover:shadow-lg transition-all cursor-pointer group flex gap-4 items-start relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-2 h-full bg-brand-500"></div>
+
+            {/* Box Tanggal */}
+            <div className="bg-brand-50 w-16 h-16 rounded-xl flex flex-col items-center justify-center text-brand-700 font-bold shrink-0 border border-brand-100">
               <span className="text-[10px] font-medium uppercase tracking-wider">
-                {formatDateBox(nearestEvent.date).month}
+                {formatFullDate(nearestEvent.date).shortMonth}
               </span>
               <span className="text-2xl leading-none">
-                {formatDateBox(nearestEvent.date).date}
+                {formatFullDate(nearestEvent.date).dateNum}
               </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-brand-900 truncate">
+
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5 pt-0.5 pr-2">
+              <h4 className="font-bold text-brand-900 text-lg leading-tight line-clamp-1">
                 {nearestEvent.title}
               </h4>
-              <p className="text-sm text-brand-500 truncate flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>{" "}
-                {nearestEvent.location}
-              </p>
+
+              <div className="flex items-center gap-1.5 text-xs text-brand-600 font-medium">
+                <Clock className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                <span>{formatFullDate(nearestEvent.date).time} WIB</span>
+              </div>
+
+              <div className="flex items-start gap-1.5 text-xs text-brand-600 font-medium mt-0.5">
+                <MapPin className="w-3.5 h-3.5 text-brand-500 shrink-0 mt-0.5" />
+                <span className="line-clamp-1 leading-snug">
+                  {nearestEvent.location}
+                </span>
+              </div>
+
+              {nearestEvent.description && (
+                <div className="flex items-start gap-1.5 text-[11px] text-gray-500 mt-1 pt-2 border-t border-brand-50">
+                  <AlignLeft className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
+                  <p className="line-clamp-2 leading-snug">
+                    {nearestEvent.description}
+                  </p>
+                </div>
+              )}
+
+              {nearestEvent.description && (
+                <p className="text-[10px] text-brand-500 font-semibold mt-1 group-hover:text-brand-700 transition-colors">
+                  Ketuk untuk lihat detail &rarr;
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -217,6 +262,75 @@ export default function HomeTab() {
       </section>
 
       <FooterBantu />
+
+      {/* DITAMBAHKAN: Modal Detail Acara */}
+      {selectedEventModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-brand-600 p-4 text-white flex justify-between items-center pr-12 relative">
+              <h3 className="font-bold text-lg leading-tight">Detail Acara</h3>
+              <button
+                onClick={() => setSelectedEventModal(null)}
+                className="absolute top-3 right-3 text-white/70 hover:text-white bg-brand-700 hover:bg-brand-800 p-1.5 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[70vh]">
+              <div>
+                <h2 className="text-xl font-black text-brand-900 mb-2">
+                  {selectedEventModal.title}
+                </h2>
+                <div className="flex flex-col gap-3 bg-brand-50 p-4 rounded-xl border border-brand-100">
+                  <div className="flex items-center gap-3 text-brand-700">
+                    <Calendar className="w-5 h-5 text-brand-500 shrink-0" />
+                    <span className="font-medium text-sm">
+                      {formatFullDate(selectedEventModal.date).fullDate}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-brand-700">
+                    <Clock className="w-5 h-5 text-brand-500 shrink-0" />
+                    <span className="font-medium text-sm">
+                      {formatFullDate(selectedEventModal.date).time} WIB
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-3 text-brand-700">
+                    <MapPin className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
+                    <span className="font-medium text-sm leading-snug">
+                      {selectedEventModal.location}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedEventModal.description && (
+                <div>
+                  <h4 className="font-bold text-sm text-brand-800 mb-2 flex items-center gap-2">
+                    <AlignLeft className="w-4 h-4 text-brand-500" /> Keterangan
+                    Tambahan
+                  </h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    {selectedEventModal.description}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setSelectedEventModal(null)}
+                className="px-6 py-2 bg-brand-600 text-white text-sm font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-sm w-full"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
