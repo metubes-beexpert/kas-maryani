@@ -10,18 +10,21 @@ export const requestAndSaveFCMToken = async (userId) => {
     const permission = await Notification.requestPermission();
 
     if (permission === "granted") {
-      // Ganti dengan VAPID Key Anda (Bisa didapat di Console Firebase -> Project Settings -> Cloud Messaging -> Web configuration)
+      // Mengambil VAPID Key dengan aman dari file .env (Vite)
       const token = await getToken(messaging, {
-        vapidKey: "VAPID_KEY_ANDA_DARI_FIREBASE_CONSOLE",
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       });
 
       if (token) {
-        // Simpan ke Realtime Database di bawah profil user
-        await update(ref(db, `users/${userId}`), {
-          fcmToken: token,
+        // Simpan token ke node 'fcmTokens' agar mudah diakses oleh backend Vercel
+        // (Sesuai dengan logika di file api/send-notif.js Anda)
+        await update(ref(db, `fcmTokens`), {
+          [userId]: token,
         });
-        console.log("Token FCM berhasil disimpan!");
+        console.log("Token FCM berhasil diamankan!");
       }
+    } else {
+      console.warn("Izin notifikasi ditolak oleh pengguna.");
     }
   } catch (error) {
     console.error("Gagal mendapatkan izin notifikasi:", error);
@@ -35,8 +38,8 @@ export const triggerAdminNotification = async (
   targetRoles = ["ketua", "bendahara", "superuser"]
 ) => {
   try {
-    // Ganti URL ini dengan domain vercel Anda nantinya
-    await fetch("https://kas-maryani.vercel.app/api/send-notif", {
+    // Sesuaikan URL ini dengan domain Vercel Anda yang sebenarnya
+    await fetch("https://kas-maryani2.vercel.app/api/send-notif", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, body, targetRoles }),

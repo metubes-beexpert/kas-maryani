@@ -7,14 +7,14 @@ importScripts(
 
 // Ganti dengan konfigurasi firebase Anda
 firebase.initializeApp({
-  apiKey: "API_KEY_ANDA",
-  authDomain: "PROJECT_ID.firebaseapp.com",
+  apiKey: "AIzaSyARecCf1UhM6FEZ4mlxYe8OYmpbk4Vbsyg",
+  authDomain: "kas-maryani.firebaseapp.com",
   databaseURL:
-    "https://PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "MESSAGING_SENDER_ID",
-  appId: "APP_ID",
+    "https://kas-maryani-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "kas-maryani",
+  storageBucket: "kas-maryani.firebasestorage.app",
+  messagingSenderId: "853609780731",
+  appId: "1:853609780731:web:7f49b5d9a6c54dfe96e75e",
 });
 
 const messaging = firebase.messaging();
