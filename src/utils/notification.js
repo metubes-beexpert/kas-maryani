@@ -16,12 +16,11 @@ export const requestAndSaveFCMToken = async (userId) => {
       });
 
       if (token) {
-        // Simpan token ke node 'fcmTokens' agar mudah diakses oleh backend Vercel
-        // (Sesuai dengan logika di file api/send-notif.js Anda)
-        await update(ref(db, `fcmTokens`), {
-          [userId]: token,
+        // PERBAIKAN: Simpan token ke node 'users' agar cocok dengan Backend
+        await update(ref(db, `users/${userId}`), {
+          fcmToken: token,
         });
-        console.log("Token FCM berhasil diamankan!");
+        console.log("Token FCM berhasil diamankan ke profil user!");
       }
     } else {
       console.warn("Izin notifikasi ditolak oleh pengguna.");
@@ -39,12 +38,19 @@ export const triggerAdminNotification = async (
 ) => {
   try {
     // Sesuaikan URL ini dengan domain Vercel Anda yang sebenarnya
-    await fetch("https://kas-maryani.vercel.app/api/send-notif", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, body, targetRoles }),
-    });
+    const response = await fetch(
+      "https://kas-maryani.vercel.app/api/send-notif",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body, targetRoles }),
+      }
+    );
+
+    // PERBAIKAN: Tangkap respons dari Vercel untuk debugging
+    const data = await response.json();
+    console.log("Status Pengiriman Notifikasi (Vercel):", data);
   } catch (error) {
-    console.error("Gagal mengirim notifikasi:", error);
+    console.error("Gagal memicu API notifikasi:", error);
   }
 };
