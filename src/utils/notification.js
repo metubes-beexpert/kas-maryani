@@ -39,7 +39,7 @@ export const triggerAdminNotification = async (
 ) => {
   try {
     // Sesuaikan URL ini dengan domain Vercel Anda yang sebenarnya
-    await fetch("https://kas-maryani2.vercel.app/api/send-notif", {
+    await fetch("https://kas-maryani.vercel.app/api/send-notif", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, body, targetRoles }),
